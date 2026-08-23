@@ -5,6 +5,10 @@ Author: Tran Thi Hong Nhung
 ---
 
 ```{r}
+#This script is used to analyze corrected flow cytometry data of each monoculture in Experiment 1
+```
+
+```{r}
 library(tidyverse)
 library(writexl)
 library(readxl)
