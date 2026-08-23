@@ -1,0 +1,90 @@
+---
+title: "Corrected_FC_Data"
+format: html
+Author: Tran Thi Hong Nhung
+---
+
+```{r}
+#This script is used to correct FC data of monocultures in Experiment 2
+```
+
+
+```{r}
+library(tidyverse)
+library(writexl)
+library(readxl)
+
+Input_file <- "Experiment2_Monocultures.xlsx"
+df <- read_excel(
+  Input_file,
+  sheet = "BH_G2_Co"
+)
+
+df <- df %>%
+  mutate(
+    is_blank = str_detect(Tube_name, "Blank"),
+    Time = str_extract(Tube_name, "T0|T24|T48")
+  )
+```
+
+```{r}
+#Calculate blank means per condition
+
+blank_means <- df %>%
+  filter(is_blank) %>%
+  group_by(`Sample_ID`,`Time`) %>%
+  summarise(
+    blank_All =
+      mean(All_Events_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Fluo =
+      mean(Fluo_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Cell =
+      mean(Cell_size_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    .groups = "drop"
+  )
+```
+
+```{r}
+df_corrected <- df %>%
+  left_join(
+    blank_means,
+    by = c("Sample_ID","Time")
+  )
+```
+
+```{r}
+df_corrected <- df_corrected %>%
+  mutate(
+    corrected_All_EventsPer_μL_V_dil =
+      All_Events_EventsPer_μL_V_dil - blank_All,
+
+    corrected_Fluo_EventsPer_μL_V_dil =
+      Fluo_EventsPer_μL_V_dil - blank_Fluo,
+
+    corrected_Cell_size_EventsPer_μL_V_dil =
+      Cell_size_EventsPer_μL_V_dil - blank_Cell
+  )
+```
+
+```{r}
+# Remove blank rows 
+BH_G2_Co_results <- df_corrected %>%
+  filter(!is_blank) %>%
+  select(
+    everything(),
+    corrected_All_EventsPer_μL_V_dil,
+    corrected_Fluo_EventsPer_μL_V_dil,
+    corrected_Cell_size_EventsPer_μL_V_dil
+  )
+```
+
+
+```{r}
+BH_G2_Co_results <- df_corrected %>%
+  filter(!is_blank)
+
+write_xlsx(BH_G2_Co_results, path = "/FC_Exp2/FC_BH_corrected_Exp2.xlsx")
+```
