@@ -10,9 +10,9 @@ library(writexl)
 library(readxl)
 library(ggplot2)
 
-df <- read_excel("/Users/tranthihongnhung/Desktop/MasterThesis/FlowCytometry/FC_AKFG_Coculture/FC_AK_FG_Co_corrected/AK_FG_Co_results_calculated.xlsx")
+df <- read_excel("AK_FG_Co_results_corrected.xlsx")
 
-OUTPUT_DIR = "/Users/tranthihongnhung/Desktop/MasterThesis/FlowCytometry/FC_AKFG_Coculture/FC_AK_FG_Co_corrected/Test" 
+OUTPUT_DIR = "FC_Coculture_Exp2" 
 ```
 
 ```{r}
