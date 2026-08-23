@@ -1,0 +1,73 @@
+---
+title: "Corrected_FC_Data"
+format: html
+Author: Tran Thi Hong Nhung
+---
+
+```{r}
+#This script is used to correct flow cytometry data of each monoculture in Experiment 1 before Cell concentration analysis
+```
+
+```{r}
+library(tidyverse)
+library(writexl)
+library(readxl)
+
+df <- read_excel("Raw_FC_Am.xlsx")
+```
+
+```{r}
+df <- df %>%
+  mutate(
+    is_blank = str_detect(`Tube_Name`, "BLANK")
+  )
+```
+
+```{r}
+#Calculate blank means per condition
+
+blank_means <- df %>%
+  filter(is_blank) %>%
+  group_by(`Sample_ID`) %>%
+  summarise(
+    blank_All =
+      mean(All_Events_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Fluo =
+      mean(Fluo_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Cell =
+      mean(Cell_size_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    .groups = "drop"
+  )
+```
+
+```{r}
+df_corrected <- df %>%
+  left_join(
+    blank_means,
+    by = "Sample_ID"
+  )
+```
+
+```{r}
+df_corrected <- df_corrected %>%
+  mutate(
+    corrected_All_EventsPer_μL_V_dil =
+      All_Events_EventsPer_μL_V_dil - blank_All,
+
+    corrected_Fluo_EventsPer_μL_V_dil =
+      Fluo_EventsPer_μL_V_dil - blank_Fluo,
+
+    corrected_Cell_size_EventsPer_μL_V_dil =
+      Cell_size_EventsPer_μL_V_dil - blank_Cell
+  )
+```
+
+```{r}
+Am_results <- df_corrected %>%
+  filter(!is_blank)
+
+write_xlsx(FC_Am, path = "/FC_Am/FC_Am_corrected.xlsx")
+```
