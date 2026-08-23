@@ -1,1 +1,98 @@
+---
+title: "Corrected_FC_Data_Analysis"
+format: html
+Author: Tran Thi Hong Nhung
+---
 
+```{r}
+#This script is used to analyze corrected flow cytometry data of monocultures (Am, Bh, Lm, and Fd) in Experiment 2 
+```
+
+```{r}
+library(tidyverse)
+library(writexl)
+library(readxl)
+library(ggplot2)
+
+df <- read_excel("FC_Am_Exp2_corrected.xlsx")
+
+OUTPUT_DIR = "FC_Am_Exp2"
+```
+
+```{r}
+df <- df %>%
+  mutate(
+    Time = str_extract(Tube_name, "T\\d+"),
+    Replicate = str_extract(Tube_name, "AK\\d")
+  ) %>%
+  mutate(
+    Time = factor(Time, levels = c("T0","T24","T48"))
+  )
+```
+
+```{r}
+summary_df <- df %>%
+  group_by(Sample_ID, Time) %>%
+  summarise(
+    mean_cells =
+      mean(corrected_Cell_size_EventsPer_μL_V_dil),
+
+    sd_cells =
+      sd(corrected_Cell_size_EventsPer_μL_V_dil),
+
+    .groups = "drop"
+  )
+```
+
+```{r}
+#Violin plot
+
+n_rep <- df %>% distinct(Sample_ID, Time, Replicate) %>%
+  count(Sample_ID, Time) %>% pull(n) %>% max()
+
+cell_size_violin_AK <- ggplot(df,
+       aes(x = Time,
+           y = corrected_Cell_size_EventsPer_μL_V_dil,
+           fill = Sample_ID,
+           color = Sample_ID)) +
+
+  geom_violin(
+    trim = FALSE,
+    alpha = 0.4,
+    position = position_dodge(width = 0.8),
+    scale = "width",
+    color = NA
+  ) +
+
+  geom_point(
+    position = position_jitterdodge(jitter.width = 0.08, dodge.width = 0.8),
+    size = 1.5,
+    alpha = 0.9
+  ) +
+
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+
+  theme_classic(base_size = 20, base_family = "Arial") +
+
+  labs(
+    title = paste0("Am monoculture growth dynamics"),
+    x = "Time (h)",
+    y = expression(
+      paste(
+        "Cell counts (events ", mu, "L"^{-1}, ")"
+      )
+    ),
+    fill = "Condition",
+    color = "Condition"
+  )
+
+print(cell_size_violin_AK)
+
+ggsave(
+  file.path(OUTPUT_DIR, "AK_G2_cell_size_violin_plot.jpg"),
+  plot = cell_size_violin_AK,
+  width = 12,
+  height = 8
+)
+```
