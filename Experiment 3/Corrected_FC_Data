@@ -88,6 +88,6 @@ BH_Law_results <- df_corrected %>%
 BH_Law_results <- df_corrected %>%
   filter(!is_blank)
 
-write_xlsx(BH_Law_results, path = "FC_BH_Law_corrected.xlsx")
+write_xlsx(BH_Law_results, path = "/BH_Exp3/FC_BH_Law_corrected.xlsx")
 ```
 
