@@ -1,27 +1,15 @@
 ---
 title: "Am growth curves"
 format: html
+Author: Tran Thi Hong Nhung
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-#  PLOT GROWTH CURVES — Individual + Combined
-#  --------------------------------------------
-#  Reads Trial_AK_G1_EXP.xlsx, does blank subtraction,
-#  then produces:
-#    1. One plot per group, saved as individual .jpg files
-#    2. One combined plot with all groups overlaid
-#    3. A faceted plot (all groups side by side)
+#  PLOT GROWTH CURVES for each monoculture in Experiment 1 (Am, Bh, Lm and Fd)
+#  Reads xlsx, does blank subtraction,
+#  then produces one combined plot with all groups overlaid
 ```
 
-You can add options to executable code like this 
 
 ```{r}
 library(readxl)
@@ -33,7 +21,7 @@ library(paletteer)
 ```{r}
 #CONFIGURATION
 
-INPUT_FILE <- "/Users/tranthihongnhung/Desktop/MasterThesis/PlateReader/Draft_Analysis_AK/Trial_AK_G1_EXP.xlsx"
+INPUT_FILE <- "Am_OD_Exp1.xlsx"
 
 GROUP_NAMES <- c(
   "A" = "YCFAG",
@@ -51,7 +39,7 @@ X_LIMITS         <- c(0, 48)   # X-axis range
 Y_LIMITS         <- NULL       # Y-axis range (NULL = auto-fit)
 PALETTE          <- "ggthemes::Superfishel_Stone"
 DPI              <- 450
-OUTPUT_DIR       <- "/Users/tranthihongnhung/Desktop/MasterThesis/PlateReader/Draft_Analysis_AK_New"
+OUTPUT_DIR       <- "Am_OD_Exp1"
 ```
 
 
@@ -130,14 +118,14 @@ od_corrected_data <- od_corrected %>%
   
   rename(Time = time_h)
   
-write.csv(od_corrected_data, file = "/Users/tranthihongnhung/Desktop/MasterThesis/PlateReader/Draft_Analysis_AK_New/od_corrected_data.csv", row.names = FALSE)
+write.csv(od_corrected_data, file = "/Am_OD_Exp1/od_corrected_data.csv", row.names = FALSE)
 
 metadata_samples <- od_corrected %>%
   select(well, group, Medium_Conditions) %>%
   distinct() %>%
   mutate(curve_id = well,.before = well)
   
-write.csv(metadata_samples, file = "/Users/tranthihongnhung/Desktop/MasterThesis/PlateReader/Draft_Analysis_AK_New/metadata_samples.csv", row.names = FALSE)
+write.csv(metadata_samples, file = "/Am_OD_Exp1/metadata_samples.csv", row.names = FALSE)
 ```
 
 ```{r}
@@ -221,75 +209,13 @@ plot_growth <- function(
 }
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
-```{r}
-#PLOT EACH CONDITION
-
-all_groups <- unique(summary_data$Medium_Conditions)
-
-for (grp in all_groups) {
-  safe_name <- gsub("[^A-Za-z0-9]", "_", grp)
-
-  plot_growth(
-    data            = summary_data,
-    selected_groups = grp,
-    title_text      = grp,
-    output_file     = paste0("growth_curve_", safe_name, ".jpg"),
-    show_legend     = FALSE
-  )
-}
-```
-
 ```{r}
 #COMBINE PLOTS
+all_groups <- unique(summary_data$Medium_Conditions)
 plot_growth(
   data            = summary_data,
   selected_groups = all_groups,
   title_text      = "Am growth curves",
-  output_file     = "growth_curve_ALL_combined.jpg"
+  output_file     = "Am_OD_Exp1.jpg"
 )
 ```
-
-```{r}
-#FACETED PLOT
-
-p_facet <- ggplot(
-  summary_data %>% mutate(Medium_Conditions = factor(Medium_Conditions, levels = all_groups)),
-  aes(x = time_h, y = Mean_OD600, color = Medium_Conditions)
-) +
-  geom_point(size = 0.8, alpha = 0.6) +
-  geom_errorbar(
-    aes(
-      ymin = Mean_OD600 - ERRORBAR_SD_MULT * SD_OD600,
-      ymax = Mean_OD600 + ERRORBAR_SD_MULT * SD_OD600
-    ),
-    width = 0.3, alpha = 0.4
-  ) +
-  geom_smooth(method = "loess", span = LOESS_SPAN, se = FALSE, linewidth = 0.9) +
-  facet_wrap(~Medium_Conditions, ncol = 3, scales = "free_y") +
-  scale_x_continuous(
-    breaks = seq(X_LIMITS[1], X_LIMITS[2], by = X_BREAKS_BY),
-    labels = function(x) sprintf("%02d:00", as.integer(x)),
-    limits = X_LIMITS
-  ) +
-  scale_color_paletteer_d(PALETTE) +
-  labs(
-    title = "Growth curves — individual panels",
-    x     = "Time (h)",
-    y     = expression(OD[600]~"(blank-corrected)")
-  ) +
-  theme_bw(base_size = 12) +
-  theme(
-    plot.title       = element_markdown(size = 14, hjust = 0.5),
-    legend.position  = "none",
-    strip.text       = element_text(face = "bold", size = 12),
-    panel.grid.minor = element_blank()
-  )
-
-print(p_facet)
-ggsave(
-  file.path(OUTPUT_DIR, "growth_curve_FACETED.jpg"),
-  plot = p_facet, dpi = DPI, width = 12, height = 8
-)
-```
-
