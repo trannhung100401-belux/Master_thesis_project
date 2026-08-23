@@ -3,6 +3,9 @@ title: "Corrected_FC_Data_Analysis"
 format: html
 Author: Tran Thi Hong Nhung
 ---
+```{r}
+#This script is used to analyze the results of flow cytometry data in Experiment 3 under different concentrations of Lawsone, Lawsone with fumarate, menaquinone-7, menaquinone-7 with fumarate
+```
 
 ```{r}
 library(tidyverse)
