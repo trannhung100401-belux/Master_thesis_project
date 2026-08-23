@@ -1,0 +1,93 @@
+---
+title: "Corrected_FC_Data"
+format: html
+Author: Tran Thi Hong Nhung
+---
+
+```{r}
+library(tidyverse)
+library(writexl)
+library(readxl)
+
+Input_file <- "BH_Exp3.xlsx"
+df <- read_excel(
+  Input_file,
+  sheet = "BH_Law"
+)
+
+df <- df %>%
+  mutate(
+    is_blank = str_detect(Tube_name, "Blank"),
+    Time = str_extract(Tube_name, "T0|T24|T48"),
+    Concentration = str_extract(Tube_name, "10uM|5uM|2.5uM|0.625uM|Control"),
+    Media = case_when(
+      is_blank & Sample_ID == "Blank_WC4" ~ "WC4",
+      is_blank & Sample_ID == "Blank_YCFAG" ~ "YCFAG",
+      Sample_ID == "Law"                    ~ "WC4",
+      Sample_ID == "YCFAG"                  ~ "YCFAG",
+      TRUE ~ NA_character_
+      )
+  )
+```
+
+```{r}
+#Calculate blank means per condition
+
+blank_means <- df %>%
+  filter(is_blank) %>%
+  group_by(`Media`,`Time`) %>%
+  summarise(
+    blank_All =
+      mean(All_Events_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Fluo =
+      mean(Fluo_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    blank_Cell =
+      mean(Cell_size_EventsPer_μL_V_dil, na.rm = TRUE),
+
+    .groups = "drop"
+  )
+```
+
+```{r}
+df_corrected <- df %>%
+  filter(!is_blank) %>%
+  left_join(blank_means, by = c("Media", "Time"))
+```
+
+```{r}
+df_corrected <- df_corrected %>%
+  mutate(
+    corrected_All_EventsPer_μL_V_dil =
+      All_Events_EventsPer_μL_V_dil - blank_All,
+
+    corrected_Fluo_EventsPer_μL_V_dil =
+      Fluo_EventsPer_μL_V_dil - blank_Fluo,
+
+    corrected_Cell_size_EventsPer_μL_V_dil =
+      Cell_size_EventsPer_μL_V_dil - blank_Cell
+  )
+```
+
+```{r}
+# Remove blank rows from final output
+
+BH_Law_results <- df_corrected %>%
+  filter(!is_blank) %>%
+  select(
+    everything(),
+    corrected_All_EventsPer_μL_V_dil,
+    corrected_Fluo_EventsPer_μL_V_dil,
+    corrected_Cell_size_EventsPer_μL_V_dil
+  )
+```
+
+
+```{r}
+BH_Law_results <- df_corrected %>%
+  filter(!is_blank)
+
+write_xlsx(BH_Law_results, path = "FC_BH_Law_corrected.xlsx")
+```
+
