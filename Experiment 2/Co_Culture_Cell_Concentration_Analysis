@@ -1,1 +1,80 @@
+---
+title: "Corrected_FC_Data_Analysis for Co-culture"
+format: html
+Author: Tran Thi Hong Nhung
+---
 
+```{r}
+library(tidyverse)
+library(writexl)
+library(readxl)
+library(ggplot2)
+
+df <- read_excel("/Users/tranthihongnhung/Desktop/MasterThesis/FlowCytometry/FC_AKFG_Coculture/FC_AK_FG_Co_corrected/AK_FG_Co_results_calculated.xlsx")
+
+OUTPUT_DIR = "/Users/tranthihongnhung/Desktop/MasterThesis/FlowCytometry/FC_AKFG_Coculture/FC_AK_FG_Co_corrected/Test" 
+```
+
+```{r}
+summary_df <- df %>%
+  group_by(Sample_ID, Time, Co_culture) %>%
+  summarise(
+    mean_cells =
+      mean(corrected_Cell_size_EventsPer_μL_V_dil),
+
+    sd_cells =
+      sd(corrected_Cell_size_EventsPer_μL_V_dil),
+
+    .groups = "drop"
+  )
+```
+
+```{r}
+cell_size_AK_FG_violin <- ggplot(df,
+       aes(x = Time,
+           y = corrected_Cell_size_EventsPer_μL_V_dil,
+           fill = Co_culture,
+           color = Co_culture)) +
+
+  geom_violin(
+    trim = FALSE,
+    alpha = 0.4,
+    position = position_dodge(width = 0.8),
+    scale = "width",
+    color = NA
+  ) +
+
+  geom_point(
+    position = position_jitterdodge(jitter.width = 0.08, dodge.width = 0.8),
+    size = 1.5,
+    alpha = 0.9
+  ) +
+
+  scale_fill_brewer(palette = "Set2",
+                    labels = c("BH" = "Am+Bh", "FD" = "Am+Fd", "LM" = "Am+Lm")) +
+  scale_color_brewer(palette = "Set2", labels = c("BH" = "Am+Bh", "FD" = "Am+Fd", "LM" = "Am+Lm")
+                     ) +
+
+  theme_classic(base_size = 30, base_family = "Arial") +
+
+  labs(
+    title = "Coculture growth dynamics",
+    x = "Time (h)",
+    y = expression(
+      paste(
+        "Cell counts (events ", mu, "L"^{-1}, ")"
+      )
+    ),
+    fill = "Co-culture",
+    color = "Co-culture"
+  )
+
+print(cell_size_AK_FG_violin)
+
+ggsave(
+  file.path(OUTPUT_DIR, "AK_FG_cell_size_violin_plot.jpg"),
+  plot = cell_size_AK_FG_violin,
+  width = 12,
+  height = 8
+)
+```
