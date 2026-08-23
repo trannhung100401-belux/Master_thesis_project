@@ -1,1 +1,56 @@
+---
+title: "Co_BH"
+format: html
+Author: Tran Thi Hong Nhung
+---
+
+```{r}
+#This script is used to plot the results from CellScanner analysis for Am+Bh or Am+Lm or Am+Fd
+```
+
+```{r}
+library(tidyverse)
+
+df <- tibble(
+  Time = c(0, 24, 48),
+  Am1  = c(27450, 13000, 16600),
+  Am2  = c(30400, 13800, 21200),
+  Am3  = c(33260, 17200, 14700),
+  Bh1  = c(192760, 241800, 149100),
+  Bh2  = c(153770, 235400, 137100),
+  Bh3  = c(173670, 239500, 148400)
+)
+
+long_df <- df %>%
+  pivot_longer(cols = -Time, names_to = "sample", values_to = "value") %>%
+  mutate(group = str_extract(sample, "[A-Za-z]+"))
+
+# Summarize: mean and SD per group per timepoint
+summary_df <- long_df %>%
+  group_by(Time, group) %>%
+  summarise(mean = mean(value), sd = sd(value), .groups = "drop")
+
+# Plot
+CellScanner_Bh <- ggplot(summary_df, aes(x = Time, y = mean, color = group, group = group)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width = 2) +
+  labs(x = "Time (h)", y = expression(
+      paste(
+        "Cell counts (events ", mu, "L"^{-1}, ")"
+      )
+    ), color = "Group",
+       title = "Am and Bh over time") +
+  theme_classic(base_size = 15, base_family = "Arial")
+
+CellScanner_Bh
+```
+
+```{r}
+OUTPUT_DIR <- "CellScanner_Results"
+save_plot(
+    file.path(OUTPUT_DIR, "CellScanner_Bh.png"),
+    CellScanner_Bh
+)
+```
 
