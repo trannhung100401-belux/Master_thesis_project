@@ -1,1 +1,72 @@
+#!/bin/bash -l
+#SBATCH --clusters=genius
+#SBATCH --account=lmsysbio
+#SBATCH --partition=batch
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=15
+#SBATCH --time=1:00:00
+#SBATCH --job-name=gapseqFill
+#SBATCH --array=1-4%4
+#SBATCH --output=/data/log/Exp.out
+#SBATCH --error=/data/log/Exp.err
 
+set -euo pipefail
+
+STUDY="/data/Exp"
+GENOMEDIR="$STUDY/genomes"
+SIF="$VSC_SCRATCH/gapseq_project/gapseq_1.4.0.sif"
+THREADS="${SLURM_CPUS_PER_TASK:-1}"
+
+# Ensure directories exist
+mkdir -p "$STUDY/log" "$STUDY/tmp" "$STUDY/out"
+
+MICROBES_LIST="$STUDY/IDgenome_list.tsv"
+LINE="$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$MICROBES_LIST" || true)"
+MICROBE="$(echo "$LINE" | tr -d '\r' | awk '{print $1}')"
+
+if [[ -z "${MICROBE}" ]]; then
+  echo "ERROR: No microbe name found for SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
+  echo "Line was: '$LINE'"
+  exit 1
+fi
+
+OUT="$STUDY/out/$MICROBE"
+DRAFT_DIR="$OUT/draft"
+FILL_DIR="$OUT/fill"
+
+mkdir -p "$FILL_DIR"
+
+# Apptainer cache
+export APPTAINER_CACHEDIR="$VSC_SCRATCH/.apptainer/cache"
+export APPTAINER_TMPDIR="$VSC_SCRATCH/.apptainer/tmp"
+mkdir -p "$APPTAINER_CACHEDIR" "$APPTAINER_TMPDIR"
+
+export TMPDIR="/work/tmp"
+
+echo "==== gapseq fill run ===="
+echo "ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID"
+echo "Microbe      : $MICROBE"
+echo "Node         : $(hostname)"
+echo "Start        : $(date)"
+echo "Threads      : $THREADS"
+echo "=========================="
+
+BIND="--bind $STUDY:/work:rw"
+
+# Medium file
+MEDIUM="/work/WC_MinimalMedium.csv"
+
+# GAPSEq FILL
+
+echo "[FILL] Running gapfilling..."
+
+apptainer exec $BIND --pwd "/work/out/$MICROBE/fill" "$SIF" \
+  gapseq fill \
+    -m "/work/out/$MICROBE/draft/${MICROBE}-draft.RDS" \
+    -n "$MEDIUM" \
+    -c "/work/out/$MICROBE/draft/${MICROBE}-rxnWeights.RDS" \
+    -g "/work/out/$MICROBE/draft/${MICROBE}-rxnXgenes.RDS" \
+    -b 100 \
+  2>&1 | tee "$STUDY/log/${MICROBE}.fill.log"
+
+echo "Done: $(date)"
