@@ -72,18 +72,18 @@ apptainer exec $BIND --pwd "/work/out/$MICROBE/find" "$SIF" \
     "$GENOME_IN" \
   2>&1 | tee "$STUDY/log/${MICROBE}.find.log"
 
-# ----------------------
+
 # (2) FIND-TRANSPORT
-# ----------------------
+
 echo "[2/3] gapseq find-transport ..."
 apptainer exec $BIND --pwd "/work/out/$MICROBE/find" "$SIF" \
   gapseq find-transport -b 200 -K "$THREADS" \
     "$GENOME_IN" \
   2>&1 | tee "$STUDY/log/${MICROBE}.findtransport.log"
 
-# ----------------------
+
 # (3) DRAFT
-# ----------------------
+
 echo "[3/3] gapseq draft ..."
 apptainer exec $BIND --pwd "/work/out/$MICROBE/draft" "$SIF" \
   gapseq draft \
