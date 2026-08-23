@@ -5,6 +5,12 @@ Author: Tran Thi Hong Nhung
 ---
 
 ```{r}
+#This script is used to plot growth curves for each recipient monocultures under different concentrations of Lawsone, 
+#Lawsone with fumarate, menaquinone-7 or menaquinone-7 with fumarate 
+```
+
+
+```{r}
 library(readxl)
 library(tidyverse)
 library(ggtext)
